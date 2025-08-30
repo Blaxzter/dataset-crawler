@@ -1,0 +1,146 @@
+{
+  "name": "A",
+  "base_url": "https://opencode.de/de/software",
+  "selections": [
+    {
+      "name": "field_1",
+      "selector": "a.ProjectCard_link__UQcvd.ProjectCard_imageWrapper__Xlz3W > img.ProjectCard_image__Q_uKe",
+      "element_type": "navigation",
+      "description": "Navigation: field_1",
+      "extraction_type": "href",
+      "attribute_name": null,
+      "workflow_action": "click",
+      "original_content": "",
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software"
+    },
+    {
+      "name": "field_2",
+      "selector": ".ProjectHeader_title__I3Qz6",
+      "element_type": "data_field",
+      "description": "data: field_2",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software/open-project-2010"
+    },
+    {
+      "name": "field_3",
+      "selector": ".ProjectHeader_description__BTM6R",
+      "element_type": "data_field",
+      "description": "data: field_3",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software/open-project-2010"
+    },
+    {
+      "name": "field_4",
+      "selector": ".Tags_tags__opeOM.ProjectHeader_categories__IeXjE",
+      "element_type": "data_field",
+      "description": "data: field_4",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software/open-project-2010"
+    },
+    {
+      "name": "field_5",
+      "selector": "div.page_longDescription__vR5gu > p",
+      "element_type": "data_field",
+      "description": "data: field_5",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software/open-project-2010"
+    },
+    {
+      "name": "field_6",
+      "selector": "div > p",
+      "element_type": "data_fi2eld",
+      "description": "data: field_6",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software/open-project-2010"
+    },
+    {
+      "name": "field_7",
+      "selector": "div > p",
+      "element_type": "data_field",
+      "description": "data: field_7",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software/open-project-2010"
+    },
+    {
+      "name": "field_8",
+      "selector": "div.ProjectCard_container__DcDmW > div.Surface_surface__F2uW5.ProjectCard_projectCard__s0PMc",
+      "element_type": "items_container",
+      "description": "items: field_8",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": null,
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software"
+    },
+    {
+      "name": "field_9",
+      "selector": "button.Button_button__exqP_.Button_small__dvm_S > span",
+      "element_type": "pagination",
+      "description": "pagination: field_9",
+      "extraction_type": "text",
+      "attribute_name": null,
+      "workflow_action": null,
+      "original_content": "Weiter",
+      "verification_attributes": null,
+      "page_url": "https://opencode.de/de/software"
+    }
+  ],
+  "workflows": [
+    {
+      "step_id": "nav_field_1",
+      "action": "click",
+      "target_selector": "a.ProjectCard_link__UQcvd.ProjectCard_imageWrapper__Xlz3W > img.ProjectCard_image__Q_uKe",
+      "description": "Navigate via field_1 and extract detail data",
+      "extract_fields": [
+        "field_2",
+        "field_3",
+        "field_4",
+        "field_5",
+        "field_6",
+        "field_7"
+      ],
+      "wait_condition": "networkidle",
+      "wait_selector": null
+    }
+  ],
+  "pagination_config": {
+    "name": "field_9",
+    "selector": "button.Button_button__exqP_.Button_small__dvm_S > span",
+    "element_type": "pagination",
+    "description": "pagination: field_9",
+    "extraction_type": "text",
+    "attribute_name": null,
+    "workflow_action": null,
+    "original_content": "Weiter",
+    "verification_attributes": null,
+    "page_url": "https://opencode.de/de/software"
+  },
+  "max_pages": null,
+  "delay_ms": 1000
+}
