@@ -461,7 +461,7 @@ class TestAdvancedCrawlerIntegration:
             max_pages=1
         )
 
-    @patch('app.advanced_crawler.async_playwright')
+    @patch('app.advanced.advanced_crawler.async_playwright')
     async def test_context_manager_setup(self, mock_playwright):
         """Test async context manager setup and teardown"""
         mock_playwright_instance = AsyncMock()
@@ -486,7 +486,7 @@ class TestAdvancedCrawlerIntegration:
         mock_browser.close.assert_called_once()
         mock_playwright_instance.stop.assert_called_once()
 
-    @patch('app.advanced_crawler.async_playwright')
+    @patch('app.advanced.advanced_crawler.async_playwright')
     async def test_extract_item_data(self, mock_playwright):
         """Test _extract_item_data method"""
         # Set up mocks

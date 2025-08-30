@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Products Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .product { border: 1px solid #ccc; margin: 10px 0; padding: 15px; }
+        .product-title { font-size: 18px; font-weight: bold; color: #333; }
+        .product-price { color: #e74c3c; font-size: 16px; margin: 5px 0; }
+        .product-description { color: #666; margin: 10px 0; }
+        .detail-link { background: #3498db; color: white; padding: 5px 10px; text-decoration: none; }
+        .pagination { margin: 20px 0; text-align: center; }
+        .pagination a { padding: 8px 15px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; }
+        .pagination .next { background: #27ae60; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Test Products Catalog</h1>
+    
+    <div class="product" data-product-id="1">
+        <h2 class="product-title">Wireless Headphones</h2>
+        <div class="product-price">$79.99</div>
+        <p class="product-description">High-quality wireless headphones with noise cancellation.</p>
+        <a href="product_detail_1.html" class="detail-link">View Details</a>
+    </div>
+    
+    <div class="product" data-product-id="2">
+        <h2 class="product-title">Bluetooth Speaker</h2>
+        <div class="product-price">$45.50</div>
+        <p class="product-description">Portable speaker with excellent sound quality.</p>
+        <a href="product_detail_2.html" class="detail-link">View Details</a>
+    </div>
+    
+    <div class="product" data-product-id="3">
+        <h2 class="product-title">Smart Watch</h2>
+        <div class="product-price">$199.00</div>
+        <p class="product-description">Feature-rich smartwatch with health tracking.</p>
+        <a href="product_detail_3.html" class="detail-link">View Details</a>
+    </div>
+    
+    <div class="product" data-product-id="4">
+        <h2 class="product-title">USB-C Cable</h2>
+        <div class="product-price">$12.99</div>
+        <p class="product-description">High-speed USB-C cable for data and charging.</p>
+        <a href="product_detail_4.html" class="detail-link">View Details</a>
+    </div>
+    
+    <div class="pagination">
+        <a href="products_page.html" class="current">1</a>
+        <a href="products_page_2.html" class="next">Next</a>
+    </div>
+</body>
+</html>
