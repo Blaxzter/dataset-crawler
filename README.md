@@ -13,24 +13,206 @@ A powerful Python application that provides both traditional programmatic web cr
 - Built-in delay and rate limiting
 - Preset configurations for common sites
 
-### 🎯 Interactive Element Selection (NEW!)
+### 🎯 Interactive Element Selection
 - **Visual element selection**: Click on webpage elements to select them for extraction
 - **Live configuration**: Build crawler configs by interacting directly with the target website
 - **Real-time feedback**: See selected elements highlighted as you work
 - **Multiple selection modes**: Data fields, item containers, pagination controls
 
-### 🔄 Advanced Workflows (NEW!)
+### 🔄 Advanced Workflows
 - **Sub-page navigation**: Click elements to navigate to detail pages and extract data
 - **Multi-tab extraction**: Open links in new tabs for parallel data collection
 - **Complex click sequences**: Define sophisticated interaction patterns
 - **Workflow chaining**: Combine multiple extraction steps into comprehensive workflows
 - **Navigation state management**: Automatically handle back navigation and context switching
 
+## 📁 Package Structure
+
+The codebase has been organized into logical modules for better maintainability:
+
+```
+app/
+├── core/               # Basic crawling functionality
+├── advanced/           # Sophisticated workflow-based crawling  
+├── interactive/        # Visual element selection tools
+├── examples/           # Usage examples and demonstrations
+├── utils/              # Utility scripts and helpers
+└── tests/              # Comprehensive test suite
+```
+
+### 🔧 Core Package (`app/core/`)
+
+#### `config.py`
+**Purpose**: Configuration classes and preset site configurations
+- `SiteConfig`: Dataclass for basic site crawling configuration
+- `PresetConfigs`: Static methods providing ready-to-use configurations for popular sites (Hacker News Jobs, Quotes to Scrape, Reddit)
+- Defines selectors, pagination settings, and delays for common scraping targets
+
+#### `crawler.py`
+**Purpose**: Basic paginated web crawler implementation
+- `CrawlerConfig`: Configuration dataclass for crawler settings
+- `PaginatedCrawler`: Main crawler class with async context manager support
+- Features: Data extraction, pagination handling, clickability validation, output to JSON/CSV
+- Supports custom extraction functions and intelligent next-page navigation
+
+### 🚀 Advanced Package (`app/advanced/`)
+
+#### `advanced_crawler.py`
+**Purpose**: Enhanced crawler with sophisticated workflow support
+- `AdvancedCrawler`: Advanced crawler supporting complex multi-step extraction workflows
+- `ExtractionResult`: Dataclass for structured extraction results with metadata
+- `NavigationState`: Tracks navigation state and context during crawling
+- Features: Sub-page navigation, new tab handling, workflow execution, back navigation
+
+#### `workflow_builder.py`
+**Purpose**: Programmatic workflow creation utilities
+- `WorkflowBuilder`: Fluent API for building complex workflows programmatically
+- Methods for creating click-and-extract, new-tab, and extract-only workflow steps
+- Supports method chaining for intuitive workflow construction
+
+### 🎯 Interactive Package (`app/interactive/`)
+
+#### `selector.py` (formerly `interactive_selector.py`)
+**Purpose**: Visual element selection interface for building crawler configurations
+- `InteractiveSelector`: Browser-based UI for visually selecting webpage elements
+- `ElementSelection`: Dataclass representing a selected element with extraction metadata
+- `WorkflowStep`: Dataclass defining workflow actions and navigation steps
+- `CrawlerConfiguration`: Complete configuration structure for advanced crawling
+- Features: Live element highlighting, multi-mode selection, persistent state management
+
+#### `configurator.py` (formerly `workflow_configurator.py`)
+**Purpose**: Complete workflow management and configuration system
+- `WorkflowConfigurator`: Central management class for creating and running crawler configurations
+- Methods for interactive configuration creation, testing, and full crawl execution
+- Configuration loading/saving with JSON persistence
+- Integration between visual selector and advanced crawler systems
+
+### 📚 Examples Package (`app/examples/`)
+
+#### `basic_examples.py` (formerly `example.py`)
+**Purpose**: Basic usage examples for traditional crawling
+- Examples of simple paginated crawling with preset configurations
+- Custom extractor function demonstrations
+- Single page crawling scenarios
+- Shows JSON and CSV output options
+
+#### `interactive_demo.py`
+**Purpose**: Complete feature demonstration system
+- `InteractiveCrawlerDemo`: Main demo class with menu-driven interface
+- Comprehensive demonstrations of all interactive features
+- Visual selection demos, programmatic workflow creation
+- Integration examples showing full system capabilities
+
+#### `usage_guide.py`
+**Purpose**: Feature-specific usage demonstrations
+- Detailed demonstrations of user element selection
+- Sophisticated workflow pattern examples
+- Real-world scenario implementations (e-commerce, news, social media)
+- Step-by-step tutorials for complex extraction patterns
+
+#### `workflow_examples.py`
+**Purpose**: Pre-built workflow templates for common use cases
+- `WorkflowExamples`: Static methods providing ready-to-use workflow configurations
+- E-commerce workflow: Product details, reviews, seller information
+- Job board workflow: Job descriptions, company information
+- News site workflow: Full articles, author profiles
+- Social media workflow: User profiles, engagement data
+
+### 🛠️ Utils Package (`app/utils/`)
+
+#### `test_ui.py`
+**Purpose**: Quick UI functionality verification
+- Tests interactive selector UI rendering and functionality
+- Verifies browser compatibility and UI element behavior
+- Simple test workflow for validating visual selection interface
+
+#### `config_runner.py` (formerly `run_my_config.py`)
+**Purpose**: Script for loading and running saved configurations
+- Loads configurations from JSON files
+- Provides interactive menu for testing vs full crawling
+- Configuration editing and cleanup utilities
+- Quick runner for specific configurations
+
+### 🧪 Tests Package (`app/tests/`)
+
+Comprehensive unit test suite covering all functionality:
+- `test_config.py`: Tests for configuration classes and presets
+- `test_crawler.py`: Tests for basic crawler functionality
+- `test_advanced_crawler.py`: Tests for advanced crawler and workflows
+- `test_interactive_selector.py`: Tests for visual selection interface
+- `test_workflow_configurator.py`: Tests for workflow management
+- `test_integration.py`: End-to-end integration tests
+- `test_examples.py`: Tests for example templates and demos
+- `conftest.py`: Shared test fixtures and utilities
+- `test_runner.py`: Test execution utilities and coverage reporting
+
+### Configuration Storage
+
+#### `crawler_configs/A.json`
+**Purpose**: Example saved crawler configuration
+- Complete configuration for https://opencode.de/de/software
+- Shows real-world complex selectors and workflow definitions
+- Includes navigation selectors, data fields, pagination, and workflow steps
+- Demonstrates multi-page extraction with click-through navigation
+
+## 🔄 Migration Guide
+
+The codebase has been refactored for better organization. Here's how to update your imports:
+
+### Old → New Import Mapping
+
+```python
+# Core functionality
+from app.config import SiteConfig, PresetConfigs
+from app.crawler import CrawlerConfig, PaginatedCrawler
+# ↓ New imports ↓
+from app.core.config import SiteConfig, PresetConfigs
+from app.core.crawler import CrawlerConfig, PaginatedCrawler
+
+# Advanced functionality  
+from app.advanced_crawler import AdvancedCrawler, WorkflowBuilder
+# ↓ New imports ↓
+from app.advanced.advanced_crawler import AdvancedCrawler
+from app.advanced.workflow_builder import WorkflowBuilder
+
+# Interactive functionality
+from app.interactive_selector import InteractiveSelector, ElementSelection
+from app.workflow_configurator import WorkflowConfigurator
+# ↓ New imports ↓
+from app.interactive.selector import InteractiveSelector, ElementSelection
+from app.interactive.configurator import WorkflowConfigurator
+
+# Examples
+from app.workflow_examples import WorkflowExamples
+# ↓ New imports ↓
+from app.examples.workflow_examples import WorkflowExamples
+```
+
+### Convenience Imports
+
+For easier usage, you can import main classes directly from the app package:
+
+```python
+# All-in-one imports (recommended for most use cases)
+from app import (
+    PaginatedCrawler, CrawlerConfig, PresetConfigs,
+    AdvancedCrawler, WorkflowBuilder,
+    InteractiveSelector, WorkflowConfigurator
+)
+```
+
+### Updated Script Locations
+
+- `app/example.py` → `app/examples/basic_examples.py`
+- `app/run_my_config.py` → `app/utils/config_runner.py`
+- `app/interactive_selector.py` → `app/interactive/selector.py`
+- `app/workflow_configurator.py` → `app/interactive/configurator.py`
+
 ## Installation
 
 ```bash
 # Using uv (recommended)
-uv add playwright
+uv sync
 uv run playwright install
 
 # Or using pip
@@ -45,10 +227,10 @@ Perfect for non-programmers or exploring new websites:
 
 ```bash
 # Start the interactive configurator
-uv run interactive_demo.py
+uv run app/examples/interactive_demo.py
 
 # Or use the quick start example
-uv run interactive_demo.py quick
+uv run app/examples/interactive_demo.py quick
 ```
 
 ### Option 2: Traditional Programmatic Setup
@@ -56,7 +238,7 @@ For developers who prefer code-based configuration:
 
 ```python
 import asyncio
-from crawler import PaginatedCrawler, CrawlerConfig
+from app.core.crawler import PaginatedCrawler, CrawlerConfig
 
 async def main():
     config = CrawlerConfig(
@@ -84,8 +266,8 @@ For complex extraction scenarios:
 
 ```python
 import asyncio
-from workflow_configurator import WorkflowConfigurator
-from advanced_crawler import AdvancedCrawler
+from app.interactive.configurator import WorkflowConfigurator
+from app.advanced.workflow_builder import WorkflowBuilder
 
 async def main():
     configurator = WorkflowConfigurator()
@@ -122,19 +304,25 @@ asyncio.run(main())
 
 ```bash
 # Traditional examples
-uv run example.py
+uv run app/examples/basic_examples.py
 
 # Interactive element selection demo
-uv run interactive_selector.py
+uv run app/interactive/selector.py
 
 # Complete workflow configurator
-uv run workflow_configurator.py
+uv run app/interactive/configurator.py
 
 # Pre-built workflow examples
-uv run workflow_examples.py
+uv run app/examples/workflow_examples.py
 
 # Full feature demonstration
-uv run interactive_demo.py
+uv run app/examples/interactive_demo.py
+
+# Quick UI test
+uv run app/utils/test_ui.py
+
+# Test refactored structure
+uv run demo_refactored.py
 ```
 
 ## 🎯 Interactive Element Selection
@@ -142,7 +330,7 @@ uv run interactive_demo.py
 The interactive selector allows you to visually configure crawlers by clicking on webpage elements:
 
 ### How it Works
-1. **Launch Interactive Mode**: Run `uv run interactive_selector.py` 
+1. **Launch Interactive Mode**: Run `uv run app/interactive/selector.py` 
 2. **Navigate to Target Site**: Enter the URL you want to crawl
 3. **Visual Selection**: A browser window opens with a control panel
 4. **Click to Select**: Click elements on the page to select them
@@ -214,7 +402,7 @@ uv run interactive_demo.py
 
 ### 2. Test Before Full Crawl
 ```python
-from workflow_configurator import WorkflowConfigurator
+from app.interactive.configurator import WorkflowConfigurator
 
 configurator = WorkflowConfigurator()
 await configurator.create_interactive_configuration("https://example.com")
@@ -224,7 +412,7 @@ await configurator.run_full_crawl("my_config")
 
 ### 3. Programmatic Workflow Building
 ```python
-from advanced_crawler import WorkflowBuilder
+from app.advanced.workflow_builder import WorkflowBuilder
 
 builder = WorkflowBuilder()
 builder.add_click_and_extract(
@@ -270,22 +458,39 @@ await configurator.run_full_crawl("my_saved_config")
 1. **Try the Quick Start**:
    ```bash
    uv sync
-   uv run interactive_demo.py quick
+   uv run app/examples/interactive_demo.py quick
    ```
 
 2. **Create Your First Interactive Configuration**:
    ```bash
-   uv run interactive_demo.py
-   # Choose option 1: "Interactive Element Selection"
+   uv run app/examples/interactive_demo.py
+   # Choose option 1: "Interactive Element Selection" 
    # Enter any website URL you want to crawl
    ```
 
 3. **Explore Pre-built Examples**:
    ```bash
-   uv run workflow_examples.py
+   uv run app/examples/workflow_examples.py
    ```
 
 4. **Run Traditional Examples**:
    ```bash
-   uv run example.py
+   uv run app/examples/basic_examples.py
+   ```
+
+5. **Test the Refactored System**:
+   ```bash
+   uv run demo_refactored.py
+   ```
+
+6. **Run Tests**:
+   ```bash
+   # Run all tests
+   python -m pytest app/tests/
+   
+   # Quick test suite
+   python app/tests/test_runner.py quick
+   
+   # Test with coverage
+   python app/tests/test_runner.py coverage
    ```

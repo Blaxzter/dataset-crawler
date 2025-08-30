@@ -7,7 +7,7 @@ Simple script to load and run your saved visual crawler configuration
 
 import asyncio
 import json
-from workflow_configurator import WorkflowConfigurator
+from app.interactive.configurator import WorkflowConfigurator
 
 async def run_saved_config():
     """Load and run your saved visual configuration"""
@@ -112,7 +112,7 @@ async def edit_configuration_interactive(config):
         if add_items == 'y':
             items_selector = input("Enter CSS selector for items container: ").strip()
             if items_selector:
-                from interactive_selector import ElementSelection
+                from app.models import ElementSelection
                 items_selection = ElementSelection(
                     name="items",
                     selector=items_selector,

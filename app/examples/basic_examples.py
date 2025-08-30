@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
-from crawler import PaginatedCrawler, CrawlerConfig
-from config import PresetConfigs
+from app.core.crawler import PaginatedCrawler, CrawlerConfig
+from app.core.config import PresetConfigs
 
 async def crawl_quotes_example():
     """Example crawling quotes.toscrape.com"""

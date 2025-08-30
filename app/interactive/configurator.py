@@ -14,8 +14,10 @@ import json
 import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from interactive_selector import InteractiveSelector, CrawlerConfiguration, ElementSelection, WorkflowStep
-from advanced_crawler import AdvancedCrawler, WorkflowBuilder
+from .selector import InteractiveSelector
+from app.models import CrawlerConfiguration, ElementSelection, WorkflowStep
+from app.advanced.advanced_crawler import AdvancedCrawler
+from app.advanced.workflow_builder import WorkflowBuilder
 
 class WorkflowConfigurator:
     def __init__(self):

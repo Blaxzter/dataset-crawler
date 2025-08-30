@@ -6,7 +6,7 @@ Simple test to verify the interactive selector UI is working properly
 """
 
 import asyncio
-from interactive_selector import InteractiveSelector
+from app.interactive.selector import InteractiveSelector
 
 async def test_ui_rendering():
     """Test the UI rendering on a simple page"""

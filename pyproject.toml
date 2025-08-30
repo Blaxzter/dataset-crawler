@@ -1,9 +1,31 @@
 [project]
 name = "crawler-test"
 version = "0.1.0"
-description = "Add your description here"
+description = "Interactive Web Crawler System with visual element selection and advanced workflows"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "playwright>=1.55.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings"
+]
+markers = [
+    "asyncio: marks tests as async (used for async/await test functions)",
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow running",
+    "browser: marks tests that require browser automation"
+]
+asyncio_mode = "auto"
