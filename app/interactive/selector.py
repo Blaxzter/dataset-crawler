@@ -20,6 +20,7 @@ import logging
 # Import shared models to avoid circular dependencies
 from app.models import ElementSelection, WorkflowStep, CrawlerConfiguration
 
+
 class InteractiveSelector:
     def __init__(self, headless: bool = False):
         self.headless = headless
@@ -27,8 +28,8 @@ class InteractiveSelector:
         self.page: Optional[Page] = None
         self.selections: List[ElementSelection] = []
         self.workflows: List[WorkflowStep] = []
-        self.current_mode = 'selection'  # 'selection', 'workflow'
-        
+        self.current_mode = "selection"  # 'selection', 'workflow'
+
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
@@ -39,29 +40,31 @@ class InteractiveSelector:
             firefox_user_prefs={
                 "dom.webdriver.enabled": False,
                 "useAutomationExtension": False,
-                "general.platform.override": "Win32"
-            }
+                "general.platform.override": "Win32",
+            },
         )
-        
+
         # Create context with better settings
         self.context = await self.browser.new_context(
-            viewport={'width': 1280, 'height': 800},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            viewport={"width": 1280, "height": 800},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         )
-        
+
         self.page = await self.context.new_page()
-        
+
         # Set extra properties to avoid detection
-        await self.page.add_init_script("""
+        await self.page.add_init_script(
+            """
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined,
             });
-        """)
-        
+        """
+        )
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if hasattr(self, 'context') and self.context:
+        if hasattr(self, "context") and self.context:
             await self.context.close()
         if self.browser:
             await self.browser.close()
@@ -70,7 +73,7 @@ class InteractiveSelector:
 
     async def _inject_selector_ui(self):
         """Inject CSS and JavaScript for element selection interface"""
-        
+
         # Inject JavaScript that creates CSS and UI dynamically
         js = """
         window.crawlerSelector = {
@@ -425,13 +428,13 @@ class InteractiveSelector:
             crawlerSelector.init();
         }
         """
-        
+
         # Keep the old method for backward compatibility
         await self.page.add_init_script(js)
 
     async def _inject_ui_after_load(self):
         """Inject UI after page loads using evaluate() - more reliable"""
-        
+
         ui_creation_script = """
         () => {
             // Remove any existing elements first
@@ -1151,7 +1154,7 @@ class InteractiveSelector:
             return 'UI injected successfully';
         }
         """
-        
+
         try:
             result = await self.page.evaluate(ui_creation_script)
             print(f"✅ {result}")
@@ -1160,45 +1163,51 @@ class InteractiveSelector:
 
     async def _setup_navigation_detection(self):
         """Set up automatic UI re-injection after page navigation"""
+
         # Listen for page navigation events
         async def handle_navigation(page):
             try:
                 # Wait for page to load
-                await page.wait_for_load_state('networkidle')
+                await page.wait_for_load_state("networkidle")
                 await asyncio.sleep(2)
-                
+
                 # Check if UI exists, if not re-inject
-                ui_exists = await page.evaluate("() => !!document.getElementById('crawler-ui')")
+                ui_exists = await page.evaluate(
+                    "() => !!document.getElementById('crawler-ui')"
+                )
                 if not ui_exists:
                     print("🔄 Page navigated, re-injecting UI...")
                     await self._inject_ui_after_load()
-                    
+
             except Exception as e:
                 print(f"⚠️ Error re-injecting UI after navigation: {e}")
-        
+
         # Set up the page navigation listener
-        self.page.on("domcontentloaded", lambda: asyncio.create_task(handle_navigation(self.page)))
+        self.page.on(
+            "domcontentloaded",
+            lambda: asyncio.create_task(handle_navigation(self.page)),
+        )
 
     async def start_selection_session(self, url: str) -> None:
         """Start an interactive selection session on the given URL"""
         self.logger.info(f"Starting element selection session for: {url}")
-        
+
         # Navigate to the page first
         await self.page.goto(url)
-        await self.page.wait_for_load_state('networkidle')
-        
+        await self.page.wait_for_load_state("networkidle")
+
         # Wait a bit for page to fully render
         await asyncio.sleep(2)
-        
+
         # Now inject the UI after page is fully loaded using evaluate instead of add_init_script
         await self._inject_ui_after_load()
-        
+
         # Add page navigation detection to auto re-inject UI
         await self._setup_navigation_detection()
-        
+
         # Wait a moment for UI to render
         await asyncio.sleep(1)
-        
+
         print(f"\n🎯 Interactive Element Selection Started!")
         print(f"🌐 Navigate to: {url}")
         print("\n📋 Instructions:")
@@ -1211,109 +1220,129 @@ class InteractiveSelector:
         print("7. Use the Back button (←) to return to previous pages")
         print("8. Click 'Finish & Save' when done")
         print("\n⌨️  Press Enter in terminal when finished selecting...")
-        
+
         # Wait for user input
         await self._wait_for_user_completion()
 
     async def _wait_for_user_completion(self):
         """Wait for user to complete element selection"""
         loop = asyncio.get_event_loop()
-        
+
         def wait_for_input():
             input()
             return True
-            
+
         await loop.run_in_executor(None, wait_for_input)
 
     async def get_configuration(self) -> Optional[CrawlerConfiguration]:
         """Extract the configuration created by user selections"""
         try:
-            config_data = await self.page.evaluate("() => window.crawlerConfig || {selections: window.crawlerSelections || [], workflows: []}")
-            
-            if not config_data or not config_data.get('selections'):
+            config_data = await self.page.evaluate(
+                "() => window.crawlerConfig || {selections: window.crawlerSelections || [], workflows: []}"
+            )
+
+            if not config_data or not config_data.get("selections"):
                 self.logger.warning("No configuration data found")
                 return None
-            
+
             # Convert to our dataclass format
             selections = []
-            for selection_data in config_data.get('selections', []):
+            for selection_data in config_data.get("selections", []):
                 # Handle both old and new format
                 if isinstance(selection_data, dict):
                     selections.append(ElementSelection(**selection_data))
                 else:
                     selections.append(selection_data)
-            
+
             workflows = []
-            for workflow_data in config_data.get('workflows', []):
+            for workflow_data in config_data.get("workflows", []):
                 if isinstance(workflow_data, dict):
                     workflows.append(WorkflowStep(**workflow_data))
                 else:
                     workflows.append(workflow_data)
-            
+
             # Auto-generate intelligent workflows from navigation selections
-            nav_selections = [s for s in selections if s.element_type == 'navigation']
+            nav_selections = [s for s in selections if s.element_type == "navigation"]
             if nav_selections:
-                self.logger.info(f"Found {len(nav_selections)} navigation elements, generating intelligent workflows...")
-                
+                self.logger.info(
+                    f"Found {len(nav_selections)} navigation elements, generating intelligent workflows..."
+                )
+
                 # Get page selection data for smarter workflow generation
-                page_selections = await self.page.evaluate("() => window.crawlerPageSelections || {}")
-                original_url = await self.page.evaluate("() => window.crawlerOriginalUrl")
-                
-                self.logger.info(f"Building workflows from {len(page_selections)} pages of selections...")
-                
+                page_selections = await self.page.evaluate(
+                    "() => window.crawlerPageSelections || {}"
+                )
+                original_url = await self.page.evaluate(
+                    "() => window.crawlerOriginalUrl"
+                )
+
+                self.logger.info(
+                    f"Building workflows from {len(page_selections)} pages of selections..."
+                )
+
                 for nav_selection in nav_selections:
                     # Find fields selected on detail pages (pages visited via navigation)
                     detail_fields = []
                     list_page_fields = []
-                    
+
                     for page_url, page_selects in page_selections.items():
                         if page_url == original_url:  # List page
-                            list_page_fields.extend([
-                                s['name'] for s in page_selects 
-                                if s.get('element_type') == 'data_field'
-                            ])
+                            list_page_fields.extend(
+                                [
+                                    s["name"]
+                                    for s in page_selects
+                                    if s.get("element_type") == "data_field"
+                                ]
+                            )
                         else:  # Detail pages
-                            detail_fields.extend([
-                                s['name'] for s in page_selects 
-                                if s.get('element_type') == 'data_field'
-                            ])
-                    
+                            detail_fields.extend(
+                                [
+                                    s["name"]
+                                    for s in page_selects
+                                    if s.get("element_type") == "data_field"
+                                ]
+                            )
+
                     # Only create workflow if we have detail fields to extract
                     if detail_fields:
                         workflow_step = WorkflowStep(
                             step_id=f"nav_{nav_selection.name}",
-                            action='click',
+                            action="click",
                             target_selector=nav_selection.selector,
                             description=f"Navigate via {nav_selection.name} and extract detail data",
                             extract_fields=detail_fields,
-                            wait_condition='networkidle'
+                            wait_condition="networkidle",
                         )
                         workflows.append(workflow_step)
-                        
+
                         self.logger.info(f"✅ Workflow created: {nav_selection.name}")
                         self.logger.info(f"   Click: {nav_selection.selector}")
                         self.logger.info(f"   Extract: {detail_fields}")
                     else:
-                        self.logger.warning(f"⚠️ Navigation {nav_selection.name} has no detail fields to extract")
-                        self.logger.info("   Tip: Navigate to detail page and select data fields there")
-            
+                        self.logger.warning(
+                            f"⚠️ Navigation {nav_selection.name} has no detail fields to extract"
+                        )
+                        self.logger.info(
+                            "   Tip: Navigate to detail page and select data fields there"
+                        )
+
             # Find pagination configuration
             pagination_config = None
             for selection in selections:
-                if selection.element_type == 'pagination':
+                if selection.element_type == "pagination":
                     pagination_config = selection
                     break
-            
+
             current_url = self.page.url
-            
+
             return CrawlerConfiguration(
                 name=f"Interactive Config - {current_url.split('//')[-1].split('/')[0]}",
                 base_url=current_url,
                 selections=selections,
                 workflows=workflows,
-                pagination_config=pagination_config
+                pagination_config=pagination_config,
             )
-            
+
         except Exception as e:
             self.logger.error(f"Error extracting configuration: {e}")
             return None
@@ -1321,52 +1350,59 @@ class InteractiveSelector:
     async def save_configuration(self, config: CrawlerConfiguration, filename: str):
         """Save configuration to JSON file"""
         config_dict = asdict(config)
-        
-        with open(filename, 'w', encoding='utf-8') as f:
+
+        with open(filename, "w", encoding="utf-8") as f:
             json.dump(config_dict, f, indent=2, ensure_ascii=False)
-        
+
         self.logger.info(f"Configuration saved to {filename}")
 
     def preview_configuration(self, config: CrawlerConfiguration):
         """Print a human-readable preview of the configuration"""
         print(f"\n🔧 Configuration Preview: {config.name}")
         print(f"🌐 Base URL: {config.base_url}")
-        
+
         if config.selections:
             print(f"\n📊 Data Fields ({len(config.selections)} total):")
             for selection in config.selections:
-                print(f"  • {selection.name} ({selection.element_type}): {selection.selector}")
-        
+                print(
+                    f"  • {selection.name} ({selection.element_type}): {selection.selector}"
+                )
+
         if config.pagination_config:
             print(f"\n📄 Pagination: {config.pagination_config.selector}")
-        
+
         if config.workflows:
             print(f"\n🔄 Workflows ({len(config.workflows)} steps):")
             for i, step in enumerate(config.workflows, 1):
                 print(f"  {i}. {step.description} -> {step.target_selector}")
 
+
 async def interactive_selection_demo():
     """Demonstration of the interactive selector"""
     print("🚀 Starting Interactive Web Crawler Element Selector")
-    
+
     url = input("Enter the URL to configure: ").strip()
-    if not url.startswith(('http://', 'https://')):
-        url = 'http://' + url
-    
+    if not url.startswith(("http://", "https://")):
+        url = "http://" + url
+
     async with InteractiveSelector(headless=False) as selector:
         await selector.start_selection_session(url)
-        
+
         config = await selector.get_configuration()
         if config:
             selector.preview_configuration(config)
-            
+
             save_config = input("\nSave this configuration? (y/N): ").strip().lower()
-            if save_config == 'y':
-                filename = input("Enter filename (without .json): ").strip() or "crawler_config"
+            if save_config == "y":
+                filename = (
+                    input("Enter filename (without .json): ").strip()
+                    or "crawler_config"
+                )
                 await selector.save_configuration(config, f"{filename}.json")
                 print(f"✅ Configuration saved to {filename}.json")
         else:
             print("❌ No configuration created")
+
 
 if __name__ == "__main__":
     asyncio.run(interactive_selection_demo())

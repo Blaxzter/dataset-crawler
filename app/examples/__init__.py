@@ -10,6 +10,4 @@ This package contains usage examples and demonstrations:
 
 from .workflow_examples import WorkflowExamples
 
-__all__ = [
-    'WorkflowExamples'
-]
+__all__ = ["WorkflowExamples"]

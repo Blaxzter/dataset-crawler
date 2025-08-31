@@ -41,18 +41,16 @@ __author__ = "Interactive Crawler Team"
 
 __all__ = [
     # Core
-    'PaginatedCrawler',
-    'CrawlerConfig', 
-    'PresetConfigs',
-    
+    "PaginatedCrawler",
+    "CrawlerConfig",
+    "PresetConfigs",
     # Advanced
-    'AdvancedCrawler',
-    'WorkflowBuilder',
-    
+    "AdvancedCrawler",
+    "WorkflowBuilder",
     # Interactive
-    'InteractiveSelector',
-    'WorkflowConfigurator',
-    'ElementSelection',
-    'WorkflowStep',
-    'CrawlerConfiguration'
+    "InteractiveSelector",
+    "WorkflowConfigurator",
+    "ElementSelection",
+    "WorkflowStep",
+    "CrawlerConfiguration",
 ]

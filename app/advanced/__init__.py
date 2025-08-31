@@ -11,9 +11,4 @@ This package contains sophisticated crawling capabilities:
 from .advanced_crawler import AdvancedCrawler, ExtractionResult, NavigationState
 from .workflow_builder import WorkflowBuilder
 
-__all__ = [
-    'AdvancedCrawler',
-    'ExtractionResult', 
-    'NavigationState',
-    'WorkflowBuilder'
-]
+__all__ = ["AdvancedCrawler", "ExtractionResult", "NavigationState", "WorkflowBuilder"]

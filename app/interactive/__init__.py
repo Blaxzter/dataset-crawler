@@ -11,7 +11,4 @@ This package contains the visual element selection system:
 from .selector import InteractiveSelector
 from .configurator import WorkflowConfigurator
 
-__all__ = [
-    'InteractiveSelector',
-    'WorkflowConfigurator'
-]
+__all__ = ["InteractiveSelector", "WorkflowConfigurator"]

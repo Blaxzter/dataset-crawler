@@ -10,9 +10,4 @@ This package contains the fundamental crawling components:
 from .config import SiteConfig, PresetConfigs
 from .crawler import CrawlerConfig, PaginatedCrawler
 
-__all__ = [
-    'SiteConfig',
-    'PresetConfigs', 
-    'CrawlerConfig',
-    'PaginatedCrawler'
-]
+__all__ = ["SiteConfig", "PresetConfigs", "CrawlerConfig", "PaginatedCrawler"]

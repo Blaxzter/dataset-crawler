@@ -8,14 +8,15 @@ Simple test to verify the interactive selector UI is working properly
 import asyncio
 from app.interactive.selector import InteractiveSelector
 
-async def test_ui_rendering():
+
+async def example_ui_rendering():
     """Test the UI rendering on a simple page"""
-    
+
     print("🔥 Testing Interactive Selector UI with Firefox")
     print("=" * 50)
-    
+
     test_url = "http://quotes.toscrape.com/"
-    
+
     print(f"🌐 Opening test page: {test_url}")
     print(f"🦊 Using Firefox for better rendering compatibility")
     print()
@@ -31,7 +32,7 @@ async def test_ui_rendering():
     print("🎯 Test the interface:")
     print("  1. Click 'Items Container' button")
     print("  2. Click on a quote box (.quote element)")
-    print("  3. Click 'Data Field' button")  
+    print("  3. Click 'Data Field' button")
     print("  4. Enter 'quote_text' in the field")
     print("  5. Click on the quote text")
     print("  6. Enter 'author_name' in the field")
@@ -39,10 +40,10 @@ async def test_ui_rendering():
     print("  8. Click 'Finish & Save'")
     print()
     print("⌨️  Press Enter when done testing...")
-    
+
     async with InteractiveSelector(headless=False) as selector:
         await selector.start_selection_session(test_url)
-        
+
         config = await selector.get_configuration()
         if config:
             print("\n✅ UI Test Successful!")
@@ -52,5 +53,6 @@ async def test_ui_rendering():
         else:
             print("❌ UI Test Failed - No configuration created")
 
+
 if __name__ == "__main__":
-    asyncio.run(test_ui_rendering())
+    asyncio.run(example_ui_rendering())

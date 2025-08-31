@@ -16,11 +16,15 @@ class ElementSelection:
     selector: str
     element_type: str  # 'data_field', 'items_container', 'pagination', 'navigation'
     description: str
-    extraction_type: str = 'text'  # 'text', 'href', 'src', 'attribute'
+    extraction_type: str = "text"  # 'text', 'href', 'src', 'attribute'
     attribute_name: Optional[str] = None
     workflow_action: Optional[str] = None  # 'click', 'hover', 'extract_only'
-    original_content: Optional[str] = None  # Store original text content for content verification
-    verification_attributes: Optional[Dict[str, str]] = None  # Store attributes for element verification
+    original_content: Optional[str] = (
+        None  # Store original text content for content verification
+    )
+    verification_attributes: Optional[Dict[str, str]] = (
+        None  # Store attributes for element verification
+    )
     page_url: Optional[str] = None  # Track which page this selection was made on
 
 
@@ -31,7 +35,7 @@ class WorkflowStep:
     target_selector: str
     description: str
     extract_fields: Optional[List[str]] = None
-    wait_condition: str = 'networkidle'  # 'networkidle', 'domcontentloaded', 'selector'
+    wait_condition: str = "networkidle"  # 'networkidle', 'domcontentloaded', 'selector'
     wait_selector: Optional[str] = None
 
 
