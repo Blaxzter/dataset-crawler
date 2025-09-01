@@ -12,6 +12,7 @@ import logging
 from typing import List, Dict, Any, Optional, Set
 from dataclasses import dataclass
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+
 from app.models import CrawlerConfiguration, ElementSelection, WorkflowStep
 
 

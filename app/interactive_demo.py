@@ -8,9 +8,9 @@ users to visually select elements and define sophisticated extraction workflows.
 
 import asyncio
 import sys
-from workflow_configurator import WorkflowConfigurator
-from advanced_crawler import AdvancedCrawler, WorkflowBuilder
-from interactive_selector import ElementSelection, WorkflowStep, CrawlerConfiguration
+
+from app.interactive.configurator import WorkflowConfigurator
+from app.models import WorkflowStep, ElementSelection, CrawlerConfiguration
 
 
 class InteractiveCrawlerDemo:
