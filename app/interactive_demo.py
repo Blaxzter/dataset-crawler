@@ -147,13 +147,17 @@ class InteractiveCrawlerDemo:
         print("-" * 40)
 
         self.configurator.list_configurations()
-        config_name = input("\n📝 Enter configuration name to test: ").strip()
+        user_input = input("\n📝 Enter configuration name or number to test: ").strip()
 
+        config_name = self.configurator.resolve_config_name(user_input)
         if config_name:
             max_pages = input("🔢 Max pages to test (default: 1): ").strip()
             max_pages = int(max_pages) if max_pages.isdigit() else 1
 
             success = await self.configurator.test_configuration(config_name, max_pages)
+        elif user_input:
+            print(f"❌ Configuration '{user_input}' not found")
+            return
 
             if success:
                 continue_crawl = (
@@ -170,8 +174,9 @@ class InteractiveCrawlerDemo:
         print("-" * 40)
 
         self.configurator.list_configurations()
-        config_name = input("\n📝 Enter configuration name to crawl: ").strip()
+        user_input = input("\n📝 Enter configuration name or number to crawl: ").strip()
 
+        config_name = self.configurator.resolve_config_name(user_input)
         if config_name:
             output_file = input("📄 Enter output filename (optional): ").strip() or None
 
@@ -179,6 +184,8 @@ class InteractiveCrawlerDemo:
 
             if results:
                 print("\n🎉 Crawl completed! Check the output file for results.")
+        elif user_input:
+            print(f"❌ Configuration '{user_input}' not found")
 
     async def _demo_advanced_workflows(self):
         """Demo: Advanced workflow patterns"""

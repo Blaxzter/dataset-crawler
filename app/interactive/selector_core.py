@@ -11,7 +11,7 @@ import logging
 from typing import List, Optional
 
 # Import shared models to avoid circular dependencies
-from models import ElementSelection, WorkflowStep, CrawlerConfiguration
+from app.models import ElementSelection, WorkflowStep, CrawlerConfiguration
 
 # Import the modular components
 from .browser_manager import BrowserManager
@@ -41,7 +41,7 @@ class InteractiveSelector:
 
         # Initialize UI injector and config manager with the page
         page = self.browser_manager.get_page()
-        self.ui_injector = UIInjector(page)
+        self.ui_injector = UIInjector(page, self.browser_manager)
         self.config_manager = ConfigManager(page)
 
         return self

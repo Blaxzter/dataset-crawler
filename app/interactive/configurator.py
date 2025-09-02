@@ -132,8 +132,12 @@ class WorkflowConfigurator:
     async def test_configuration(self, config_name: str, max_pages: int = 1) -> bool:
         """Test a configuration with limited pages"""
         if config_name not in self.configurations:
-            print(f"❌ Configuration '{config_name}' not found")
-            return False
+            # Try to load from file first
+            print(f"🔍 Configuration '{config_name}' not in memory, attempting to load from file...")
+            loaded_config = self.load_configuration(config_name)
+            if not loaded_config:
+                print(f"❌ Configuration '{config_name}' not found in memory or files")
+                return False
 
         config = self.configurations[config_name]
         config.max_pages = max_pages
@@ -165,8 +169,12 @@ class WorkflowConfigurator:
     ) -> Optional[List]:
         """Run a full crawl using the specified configuration"""
         if config_name not in self.configurations:
-            print(f"❌ Configuration '{config_name}' not found")
-            return None
+            # Try to load from file first
+            print(f"🔍 Configuration '{config_name}' not in memory, attempting to load from file...")
+            loaded_config = self.load_configuration(config_name)
+            if not loaded_config:
+                print(f"❌ Configuration '{config_name}' not found in memory or files")
+                return None
 
         config = self.configurations[config_name]
         output_file = output_file or f"{config_name}_results.json"
@@ -231,30 +239,70 @@ class WorkflowConfigurator:
         """List all available configurations"""
         print(f"\n📋 Available Configurations:")
 
-        # List loaded configurations
-        if self.configurations:
-            print("\n🔧 Loaded in memory:")
-            for name, config in self.configurations.items():
-                workflow_count = len(config.workflows)
-                field_count = len(
-                    [s for s in config.selections if s.element_type == "data_field"]
-                )
-                print(f"  • {name}: {field_count} fields, {workflow_count} workflows")
-
-        # List saved configuration files
+        # Get all unique configuration names (from memory and files)
+        all_configs = set()
+        
+        # Add loaded configurations
+        memory_configs = set(self.configurations.keys())
+        all_configs.update(memory_configs)
+        
+        # Add saved configuration files
         config_files = [
-            f for f in os.listdir(self.config_directory) if f.endswith(".json")
+            f.replace(".json", "") for f in os.listdir(self.config_directory) if f.endswith(".json")
         ]
-        if config_files:
-            print(f"\n💾 Saved configurations:")
-            for file in config_files:
-                name = file.replace(".json", "")
-                print(f"  • {name}")
-
-        if not self.configurations and not config_files:
-            print(
-                "  No configurations found. Create one with create_interactive_configuration()"
-            )
+        file_configs = set(config_files)
+        all_configs.update(file_configs)
+        
+        if all_configs:
+            print("\n📝 Available configurations:")
+            for i, name in enumerate(sorted(all_configs), 1):
+                status = []
+                if name in memory_configs:
+                    config = self.configurations[name]
+                    workflow_count = len(config.workflows)
+                    field_count = len([s for s in config.selections if s.element_type == "data_field"])
+                    status.append(f"💾 loaded: {field_count} fields, {workflow_count} workflows")
+                if name in file_configs:
+                    status.append("💿 saved")
+                
+                status_str = " | ".join(status) if status else "❓ unknown"
+                print(f"  {i}. {name} ({status_str})")
+            
+            print(f"\n💡 You can reference configurations by name (e.g., 'A') or number (e.g., '1')")
+        else:
+            print("  No configurations found. Create one with create_interactive_configuration()")
+    
+    def resolve_config_name(self, user_input: str) -> Optional[str]:
+        """Resolve configuration name from user input (name or number)"""
+        if not user_input:
+            return None
+            
+        # Get all available configurations
+        all_configs = set()
+        all_configs.update(self.configurations.keys())
+        
+        # Add saved files
+        try:
+            config_files = [
+                f.replace(".json", "") for f in os.listdir(self.config_directory) if f.endswith(".json")
+            ]
+            all_configs.update(config_files)
+        except:
+            pass
+            
+        all_configs = sorted(all_configs)
+        
+        # Check if input is a number
+        if user_input.isdigit():
+            index = int(user_input) - 1
+            if 0 <= index < len(all_configs):
+                return all_configs[index]
+        
+        # Check if input is a direct name match
+        if user_input in all_configs:
+            return user_input
+            
+        return None
 
 
 async def main_configurator_demo():
@@ -288,17 +336,23 @@ async def main_configurator_demo():
                 await configurator.create_interactive_configuration(url, config_name)
         elif choice == "2":
             configurator.list_configurations()
-            config_name = input("Enter configuration name to test: ").strip()
+            user_input = input("Enter configuration name or number to test: ").strip()
+            config_name = configurator.resolve_config_name(user_input)
             if config_name:
                 await configurator.test_configuration(config_name)
+            elif user_input:
+                print(f"❌ Configuration '{user_input}' not found")
         elif choice == "3":
             configurator.list_configurations()
-            config_name = input("Enter configuration name to crawl: ").strip()
+            user_input = input("Enter configuration name or number to crawl: ").strip()
+            config_name = configurator.resolve_config_name(user_input)
             if config_name:
                 output_file = (
                     input("Enter output filename (optional): ").strip() or None
                 )
                 await configurator.run_full_crawl(config_name, output_file)
+            elif user_input:
+                print(f"❌ Configuration '{user_input}' not found")
         elif choice == "4":
             configurator.list_configurations()
         elif choice == "5":

@@ -13,7 +13,7 @@ from dataclasses import asdict
 from playwright.async_api import Page
 
 # Import shared models to avoid circular dependencies
-from models import ElementSelection, WorkflowStep, CrawlerConfiguration
+from app.models import ElementSelection, WorkflowStep, CrawlerConfiguration
 
 
 class ConfigManager:
@@ -102,7 +102,7 @@ class ConfigManager:
                         [
                             s["name"]
                             for s in page_selects
-                            if s.get("element_type") == "data_field"
+                            if s.get("element_type") in ["data_field", "items_container"]
                         ]
                     )
                 else:  # Detail pages
@@ -110,7 +110,7 @@ class ConfigManager:
                         [
                             s["name"]
                             for s in page_selects
-                            if s.get("element_type") == "data_field"
+                            if s.get("element_type") in ["data_field", "items_container"]
                         ]
                     )
 

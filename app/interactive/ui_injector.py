@@ -14,8 +14,9 @@ from playwright.async_api import Page
 class UIInjector:
     """Handles UI injection and page interaction setup"""
     
-    def __init__(self, page: Page):
+    def __init__(self, page: Page, browser_manager=None):
         self.page = page
+        self.browser_manager = browser_manager
         self.logger = logging.getLogger(__name__)
     
     async def inject_legacy_ui(self):
@@ -435,6 +436,16 @@ class UIInjector:
                     background: #ff4444 !important;
                 }
                 
+                .crawler-btn.disabled {
+                    background: #ccc !important;
+                    color: #666 !important;
+                    cursor: not-allowed !important;
+                }
+                
+                .crawler-btn.disabled:hover {
+                    background: #ccc !important;
+                }
+                
                 .crawler-input {
                     width: 100% !important;
                     padding: 8px !important;
@@ -490,20 +501,28 @@ class UIInjector:
             ui.id = 'crawler-ui';
             
             ui.innerHTML = `
-                <div class="crawler-title">Element Selector</div>
+                <div class="crawler-title">Interactive Selector</div>
                 
-                <div style="margin-bottom: 10px;">
-                    <button class="crawler-btn active" onclick="setCrawlerMode('data', this)">Data Field</button>
-                    <button class="crawler-btn" onclick="setCrawlerMode('items', this)">Items</button><br>
-                    <button class="crawler-btn" onclick="setCrawlerMode('pagination', this)">Pagination</button>
-                    <button class="crawler-btn" onclick="setCrawlerMode('nav', this)">Navigation</button><br>
-                    <button class="crawler-btn" onclick="toggleWorkflowMode(this)" id="workflow-btn">🔧 Workflow Mode</button>
+                <div id="step-indicator" style="margin-bottom: 10px; font-size: 12px; color: #666; text-align: center;">
+                    Step 1: Select item containers
+                </div>
+                
+                <div id="mode-buttons" style="margin-bottom: 10px;">
+                    <button class="crawler-btn" onclick="setCrawlerMode('items', this)" id="items-btn" style="background: #ff4444;">Items Container</button><br>
+                    <button class="crawler-btn disabled" onclick="setCrawlerMode('pagination', this)" id="pagination-btn" disabled>Pagination (Step 2)</button><br>
+                    <button class="crawler-btn disabled" onclick="setCrawlerMode('data', this)" id="data-btn" disabled>Data Fields (Step 3)</button><br>
+                    <button class="crawler-btn disabled" onclick="showOverview()" id="overview-btn" disabled>Overview (Step 4)</button>
                 </div>
                 
                 <input type="text" class="crawler-input" id="field-name" placeholder="Field name...">
                 
                 <div style="text-align: center; margin-bottom: 10px;">
-                    <button class="crawler-btn" onclick="window.finishCrawlerConfig()">Finish & Save</button>
+                    <button class="crawler-btn" id="next-step-btn" onclick="nextStep()" disabled>Next Step</button>
+                    <button class="crawler-btn" onclick="window.finishCrawlerConfig()" id="finish-btn" style="display: none;">Finish & Save</button>
+                    <button class="crawler-btn" id="workflow-btn" onclick="startWorkflowMode()" style="display: none; background: #cc0066;">⚙️ Workflows</button>
+                </div>
+                
+                <div style="text-align: center; margin-bottom: 10px;">
                     <button class="crawler-btn" id="back-btn" onclick="navigateBack()" style="display: none; background: #ff6600;">← Back</button>
                 </div>
                 
@@ -522,38 +541,84 @@ class UIInjector:
         
         try:
             result = await self.page.evaluate(ui_creation_script)
+            
+            # Inject backend state functions
+            await self._inject_backend_state_functions()
+            
             self.logger.info(f"✅ {result}")
         except Exception as e:
             self.logger.error(f"❌ UI injection failed: {e}")
     
+    async def _inject_backend_state_functions(self):
+        """Inject functions to communicate with Playwright backend for state management"""
+        if not self.browser_manager:
+            self.logger.warning("No browser manager provided - backend state functions not available")
+            return
+        
+        try:
+            # Expose backend state functions to the page (only if not already registered)
+            await self.page.expose_function("playwrightGetState", self.browser_manager.get_state)
+            await self.page.expose_function("playwrightSaveState", self.browser_manager.save_state)
+            self.logger.info("✅ Backend state functions injected")
+        except Exception as e:
+            if "has been already registered" in str(e):
+                self.logger.info("Backend state functions already registered, skipping...")
+            else:
+                self.logger.error(f"Failed to inject backend state functions: {e}")
+    
     def _get_ui_javascript(self):
         """Get the main UI JavaScript code"""
         return """
-            // Set up global variables and functions with persistent storage
-            window.crawlerMode = 'data';
-            
-            // Load persistent state from sessionStorage
-            try {
-                window.crawlerSelections = JSON.parse(sessionStorage.getItem('crawlerSelections')) || [];
-                window.crawlerNavigationHistory = JSON.parse(sessionStorage.getItem('crawlerNavigationHistory')) || [];
-                window.crawlerPageSelections = JSON.parse(sessionStorage.getItem('crawlerPageSelections')) || {};
-                window.crawlerOriginalUrl = sessionStorage.getItem('crawlerOriginalUrl') || window.location.href;
-            } catch (e) {
-                console.log('Initializing fresh crawler state');
-                window.crawlerSelections = [];
-                window.crawlerNavigationHistory = [];
-                window.crawlerPageSelections = {};
-                window.crawlerOriginalUrl = window.location.href;
-            }
-            
-            window.crawlerLogHistory = [];
+            // Set up guided workflow state
+            window.crawlerMode = 'items'; // Start with items container
+            window.crawlerCurrentStep = 1;
             window.crawlerWorkflowMode = false;
+            window.crawlerGuidedMode = true; // New guided mode
             
-            // If this is the first time, set original URL
-            if (!sessionStorage.getItem('crawlerOriginalUrl')) {
-                sessionStorage.setItem('crawlerOriginalUrl', window.location.href);
-                window.crawlerOriginalUrl = window.location.href;
-            }
+            // Initialize empty state - will be loaded from Playwright backend
+            window.crawlerSelections = [];
+            window.crawlerNavigationHistory = [];
+            window.crawlerPageSelections = {};
+            window.crawlerOriginalUrl = null;
+            window.crawlerLogHistory = [];
+            
+            // Backend state management functions (communicate with Playwright)
+            window.loadStateFromBackend = async () => {
+                try {
+                    // This will be injected by Python to load state from backend
+                    const state = await window.playwrightGetState();
+                    if (state) {
+                        window.crawlerSelections = state.selections || [];
+                        window.crawlerNavigationHistory = state.navigation_history || [];
+                        window.crawlerPageSelections = state.page_selections || {};
+                        window.crawlerOriginalUrl = state.original_url || window.location.href;
+                        window.crawlerCurrentStep = state.current_step || 1;
+                        console.log('✅ State loaded from Playwright backend:', state);
+                        
+                        // Update navigation status after state is loaded
+                        setTimeout(updateNavigationStatus, 50);
+                    }
+                } catch (e) {
+                    console.log('⚠️ Using fresh crawler state (no backend state found)');
+                    window.crawlerOriginalUrl = window.location.href;
+                }
+            };
+            
+            window.saveStateToBackend = async () => {
+                try {
+                    const state = {
+                        selections: window.crawlerSelections || [],
+                        navigation_history: window.crawlerNavigationHistory || [],
+                        page_selections: window.crawlerPageSelections || {},
+                        original_url: window.crawlerOriginalUrl,
+                        current_step: window.crawlerCurrentStep || 1
+                    };
+                    await window.playwrightSaveState(state);
+                    console.log('✅ State saved to Playwright backend');
+                } catch (e) {
+                    console.warn('⚠️ Failed to save state to backend:', e);
+                }
+            };
             
             // Enhanced logging function
             function logMessage(message, type = 'info') {
@@ -589,10 +654,21 @@ class UIInjector:
                 }
             }
             
-            // Function to set crawler mode
+            // Guided workflow functions
             window.setCrawlerMode = (mode, buttonElement) => {
+                // In guided mode, only allow mode if it's the current step or if it's enabled
+                if (window.crawlerGuidedMode && buttonElement && buttonElement.disabled) {
+                    logMessage('Complete the current step first!', 'info');
+                    return;
+                }
+                
+                // In workflow mode, allow navigation freely
+                if (window.crawlerWorkflowMode && mode === 'nav') {
+                    logMessage('💡 Navigation mode active - Click links to create workflows', 'info');
+                }
+                
                 window.crawlerMode = mode;
-                document.querySelectorAll('.crawler-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('#mode-buttons .crawler-btn').forEach(btn => btn.classList.remove('active'));
                 if (buttonElement) {
                     buttonElement.classList.add('active');
                 }
@@ -607,19 +683,173 @@ class UIInjector:
                 logMessage(`Mode: ${modeNames[mode] || mode}`, 'mode');
             };
             
-            // Workflow mode toggle
-            window.toggleWorkflowMode = (buttonElement) => {
-                window.crawlerWorkflowMode = !window.crawlerWorkflowMode;
-                if (window.crawlerWorkflowMode) {
-                    buttonElement.style.background = '#ff4444';
-                    buttonElement.textContent = '🔧 Workflow: ON';
-                    logMessage('Workflow Mode: ENABLED - Nav selections will create workflows', 'mode');
-                } else {
-                    buttonElement.style.background = '#007cba';
-                    buttonElement.textContent = '🔧 Workflow Mode';
-                    logMessage('Workflow Mode: DISABLED - Nav selections for manual use only', 'mode');
+            // Update UI based on current step
+            function updateGuidedWorkflow() {
+                const stepIndicator = document.getElementById('step-indicator');
+                const nextBtn = document.getElementById('next-step-btn');
+                const finishBtn = document.getElementById('finish-btn');
+                const workflowBtn = document.getElementById('workflow-btn');
+                
+                // Count selections by type
+                const itemsSelected = window.crawlerSelections.filter(s => s.element_type === 'items_container').length;
+                const paginationSelected = window.crawlerSelections.filter(s => s.element_type === 'pagination').length;
+                const dataSelected = window.crawlerSelections.filter(s => s.element_type === 'data_field').length;
+                
+                // Update step indicator and enable/disable buttons
+                switch(window.crawlerCurrentStep) {
+                    case 1: // Items step
+                        stepIndicator.textContent = 'Step 1: Select item containers';
+                        document.getElementById('items-btn').classList.add('active');
+                        nextBtn.disabled = itemsSelected === 0;
+                        nextBtn.textContent = 'Next: Pagination';
+                        break;
+                    case 2: // Pagination step
+                        stepIndicator.textContent = 'Step 2: Select pagination (optional)';
+                        enableButton('pagination-btn');
+                        document.getElementById('pagination-btn').classList.add('active');
+                        nextBtn.disabled = false; // Pagination is optional
+                        nextBtn.textContent = 'Next: Data Fields';
+                        break;
+                    case 3: // Data fields step
+                        stepIndicator.textContent = 'Step 3: Select data fields in items';
+                        enableButton('data-btn');
+                        document.getElementById('data-btn').classList.add('active');
+                        nextBtn.disabled = dataSelected === 0;
+                        nextBtn.textContent = 'Next: Overview';
+                        break;
+                    case 4: // Overview step
+                        stepIndicator.textContent = 'Step 4: Overview and finish';
+                        enableButton('overview-btn');
+                        nextBtn.style.display = 'none';
+                        finishBtn.style.display = 'inline-block';
+                        workflowBtn.style.display = 'inline-block';
+                        showOverview();
+                        break;
+                }
+                
+                // Save current step to backend
+                saveStateToStorage();
+            }
+            
+            function enableButton(buttonId) {
+                const btn = document.getElementById(buttonId);
+                btn.classList.remove('disabled');
+                btn.disabled = false;
+            }
+            
+            window.nextStep = () => {
+                if (window.crawlerCurrentStep < 4) {
+                    window.crawlerCurrentStep++;
+                    // Set appropriate mode for next step
+                    switch(window.crawlerCurrentStep) {
+                        case 2:
+                            window.crawlerMode = 'pagination';
+                            break;
+                        case 3:
+                            window.crawlerMode = 'data';
+                            break;
+                    }
+                    updateGuidedWorkflow();
+                    logMessage(`Advanced to step ${window.crawlerCurrentStep}`, 'mode');
                 }
             };
+            
+            window.showOverview = () => {
+                const logDiv = document.getElementById('crawler-log');
+                logDiv.innerHTML = ''; // Clear log for overview
+                
+                const itemsCount = window.crawlerSelections.filter(s => s.element_type === 'items_container').length;
+                const paginationCount = window.crawlerSelections.filter(s => s.element_type === 'pagination').length;
+                const dataCount = window.crawlerSelections.filter(s => s.element_type === 'data_field').length;
+                
+                logMessage('🎯 Configuration Overview:', 'info');
+                logMessage(`• ${itemsCount} item container(s) selected`, 'info');
+                logMessage(`• ${paginationCount} pagination element(s) selected`, 'info');
+                logMessage(`• ${dataCount} data field(s) selected`, 'info');
+                
+                if (itemsCount > 0 && dataCount > 0) {
+                    logMessage('✅ Ready to crawl! Your configuration looks good.', 'info');
+                } else if (itemsCount === 0) {
+                    logMessage('⚠️ Warning: No item containers selected', 'info');
+                } else if (dataCount === 0) {
+                    logMessage('⚠️ Warning: No data fields selected', 'info');
+                }
+                
+                // Show selected elements details
+                window.crawlerSelections.forEach((selection, index) => {
+                    logMessage(`${index + 1}. ${selection.name} (${selection.element_type}): ${selection.selector}`, 'selection');
+                });
+            };
+            
+            window.startWorkflowMode = () => {
+                window.crawlerGuidedMode = false;
+                window.crawlerWorkflowMode = true;
+                
+                // Update UI for workflow mode
+                document.getElementById('step-indicator').textContent = 'Workflow Mode: Create complex data extraction';
+                
+                // Replace mode buttons with workflow-specific ones
+                const modeButtonsDiv = document.getElementById('mode-buttons');
+                modeButtonsDiv.innerHTML = `
+                    <button class="crawler-btn active" onclick="setCrawlerMode('data', this)" id="data-btn">Data Field</button>
+                    <button class="crawler-btn" onclick="setCrawlerMode('nav', this)" id="nav-btn">🔗 Navigation</button><br>
+                    <button class="crawler-btn" onclick="setCrawlerMode('items', this)" id="items-btn">Items Container</button>
+                    <button class="crawler-btn" onclick="setCrawlerMode('pagination', this)" id="pagination-btn">Pagination</button>
+                `;
+                
+                // Update button actions
+                const nextStepBtn = document.getElementById('next-step-btn');
+                const finishBtn = document.getElementById('finish-btn');
+                const workflowBtn = document.getElementById('workflow-btn');
+                
+                nextStepBtn.style.display = 'none';
+                finishBtn.style.display = 'inline-block';
+                workflowBtn.textContent = '← Back to Guided';
+                workflowBtn.onclick = () => backToGuided();
+                
+                logMessage('🔧 Workflow mode activated - Use Navigation button to click links!', 'mode');
+                logMessage('💡 Click Navigation, then click links to create workflows', 'info');
+            };
+            
+            window.backToGuided = () => {
+                window.crawlerGuidedMode = true;
+                window.crawlerWorkflowMode = false;
+                window.crawlerCurrentStep = 4; // Back to overview
+                
+                // Restore guided mode UI
+                const modeButtonsDiv = document.getElementById('mode-buttons');
+                modeButtonsDiv.innerHTML = `
+                    <button class="crawler-btn" onclick="setCrawlerMode('items', this)" id="items-btn">Items Container</button><br>
+                    <button class="crawler-btn" onclick="setCrawlerMode('pagination', this)" id="pagination-btn">Pagination</button><br>
+                    <button class="crawler-btn" onclick="setCrawlerMode('data', this)" id="data-btn">Data Fields</button><br>
+                    <button class="crawler-btn" onclick="showOverview()" id="overview-btn">Overview</button>
+                `;
+                
+                // Update buttons
+                const nextStepBtn = document.getElementById('next-step-btn');
+                const finishBtn = document.getElementById('finish-btn');
+                const workflowBtn = document.getElementById('workflow-btn');
+                
+                nextStepBtn.style.display = 'none';
+                finishBtn.style.display = 'inline-block';
+                workflowBtn.textContent = '⚙️ Workflows';
+                workflowBtn.onclick = () => startWorkflowMode();
+                
+                updateGuidedWorkflow();
+                logMessage('📋 Back to guided mode', 'mode');
+            };
+            
+            // Initialize guided workflow and navigation status
+            setTimeout(async () => {
+                await window.loadStateFromBackend();
+                updateGuidedWorkflow();
+                updateNavigationStatus();
+                
+                // Force update navigation status again after a brief delay 
+                // in case state loading is async
+                setTimeout(updateNavigationStatus, 200);
+            }, 100);
+            
             
             window.finishCrawlerConfig = () => {
                 window.crawlerConfig = {
@@ -658,12 +888,20 @@ class UIInjector:
                         cleanupBtn.style.fontSize = '10px';
                         cleanupBtn.style.marginTop = '10px';
                         cleanupBtn.textContent = 'Clear Session';
-                        cleanupBtn.onclick = () => {
-                            sessionStorage.removeItem('crawlerSelections');
-                            sessionStorage.removeItem('crawlerNavigationHistory');
-                            sessionStorage.removeItem('crawlerPageSelections');
-                            sessionStorage.removeItem('crawlerOriginalUrl');
-                            logMessage('🧹 Session storage cleared', 'info');
+                        cleanupBtn.onclick = async () => {
+                            // Clear backend state instead of sessionStorage
+                            await window.playwrightSaveState({
+                                selections: [],
+                                navigation_history: [],
+                                page_selections: {},
+                                original_url: null,
+                                current_step: 1
+                            });
+                            window.crawlerSelections = [];
+                            window.crawlerNavigationHistory = [];
+                            window.crawlerPageSelections = {};
+                            window.crawlerOriginalUrl = null;
+                            logMessage('🧹 Backend state cleared', 'info');
                         };
                         ui.appendChild(cleanupBtn);
                     }
@@ -681,8 +919,8 @@ class UIInjector:
                 
                 if (window.crawlerNavigationHistory && window.crawlerNavigationHistory.length > 0) {
                     const previousUrl = window.crawlerNavigationHistory.pop();
-                    // Persist updated history
-                    sessionStorage.setItem('crawlerNavigationHistory', JSON.stringify(window.crawlerNavigationHistory));
+                    // Persist updated history to backend
+                    saveStateToStorage();
                     
                     logMessage(`Navigating back to: ${previousUrl}`, 'navigation');
                     window.location.href = previousUrl;
@@ -697,16 +935,10 @@ class UIInjector:
                 }
             };
             
-            // Helper function to save all state to sessionStorage
+            // Helper function to save all state to backend (replacing sessionStorage)
             function saveStateToStorage() {
-                try {
-                    sessionStorage.setItem('crawlerSelections', JSON.stringify(window.crawlerSelections || []));
-                    sessionStorage.setItem('crawlerNavigationHistory', JSON.stringify(window.crawlerNavigationHistory || []));
-                    sessionStorage.setItem('crawlerPageSelections', JSON.stringify(window.crawlerPageSelections || {}));
-                    sessionStorage.setItem('crawlerOriginalUrl', window.crawlerOriginalUrl || window.location.href);
-                } catch (e) {
-                    console.warn('Failed to save crawler state:', e);
-                }
+                // Use backend storage instead of sessionStorage
+                window.saveStateToBackend();
             }
             
             // Function to update navigation status
@@ -717,19 +949,45 @@ class UIInjector:
                 console.log('Navigation Status Check:', {
                     current: window.location.href,
                     original: window.crawlerOriginalUrl,
-                    historyLength: window.crawlerNavigationHistory?.length || 0
+                    historyLength: window.crawlerNavigationHistory?.length || 0,
+                    backBtnExists: !!backBtn,
+                    navStatusExists: !!navStatus
                 });
                 
                 if (navStatus) {
                     const isOriginalPage = window.location.href === window.crawlerOriginalUrl;
                     const hasHistory = window.crawlerNavigationHistory && window.crawlerNavigationHistory.length > 0;
                     
+                    console.log('Navigation decision:', {
+                        isOriginalPage,
+                        hasHistory,
+                        shouldShowBack: !isOriginalPage || hasHistory
+                    });
+                    
                     if (isOriginalPage && !hasHistory) {
                         navStatus.textContent = 'Original Page';
-                        if (backBtn) backBtn.style.display = 'none';
+                        if (backBtn) {
+                            backBtn.style.display = 'none';
+                            console.log('✅ Back button hidden (original page, no history)');
+                        }
                     } else {
-                        navStatus.textContent = `Navigated Page (${window.crawlerNavigationHistory?.length || 0} back)`;
-                        if (backBtn) backBtn.style.display = 'inline-block';
+                        // Show more detailed navigation info
+                        const originalHost = new URL(window.crawlerOriginalUrl).hostname;
+                        const currentHost = new URL(window.location.href).hostname;
+                        const historyCount = window.crawlerNavigationHistory?.length || 0;
+                        
+                        if (originalHost === currentHost) {
+                            navStatus.textContent = `Navigated: ${historyCount} steps from start`;
+                        } else {
+                            navStatus.textContent = `Navigated: ${historyCount} steps from ${originalHost}`;
+                        }
+                        
+                        if (backBtn) {
+                            backBtn.style.display = 'inline-block';
+                            console.log('✅ Back button shown (navigated page or has history)');
+                        } else {
+                            console.log('⚠️ Back button element not found!');
+                        }
                     }
                 }
             }
@@ -815,6 +1073,12 @@ class UIInjector:
                 const elementDesc = getElementDescription(e.target);
                 const originalContent = e.target.textContent?.trim() || '';
                 
+                // Restrict navigation mode to workflow mode only
+                if (window.crawlerMode === 'nav' && !window.crawlerWorkflowMode) {
+                    logMessage('Navigation is only available in Workflow Mode! Use the Workflows button first.', 'info');
+                    return;
+                }
+                
                 // Handle navigation mode differently
                 if (window.crawlerMode === 'nav') {
                     // If it's a link, follow it
@@ -823,7 +1087,7 @@ class UIInjector:
                         const href = link.href;
                         
                         if (href && !href.startsWith('javascript:') && !href.startsWith('#')) {
-                            // Store current URL in navigation history (with persistence)
+                            // Store current URL in navigation history (with backend persistence)
                             window.crawlerNavigationHistory.push(window.location.href);
                             saveStateToStorage();
                             
@@ -946,6 +1210,11 @@ class UIInjector:
                 logMessage(`Element: ${elementDesc}`, 'info');
                 
                 document.getElementById('field-name').value = '';
+                
+                // Update guided workflow after selection
+                if (window.crawlerGuidedMode) {
+                    updateGuidedWorkflow();
+                }
                 
             }, true);
             
@@ -1127,6 +1396,9 @@ class UIInjector:
                 if not ui_exists:
                     self.logger.info("🔄 Page navigated, re-injecting UI...")
                     await self.inject_modern_ui()
+                else:
+                    # UI exists, but make sure backend functions are available
+                    await self._inject_backend_state_functions()
 
             except Exception as e:
                 self.logger.error(f"⚠️ Error re-injecting UI after navigation: {e}")

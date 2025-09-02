@@ -20,7 +20,7 @@ This is the main entry point that uses the modular components:
 import asyncio
 
 # Import shared models to avoid circular dependencies
-from models import ElementSelection, WorkflowStep, CrawlerConfiguration
+from app.models import ElementSelection, WorkflowStep, CrawlerConfiguration
 
 # Import the modular components
 from .selector_core import InteractiveSelector

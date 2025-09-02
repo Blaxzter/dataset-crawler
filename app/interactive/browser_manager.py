@@ -20,6 +20,15 @@ class BrowserManager:
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
+        
+        # Persistent state storage (not dependent on webpage)
+        self.crawler_state = {
+            'selections': [],
+            'navigation_history': [],
+            'page_selections': {},
+            'original_url': None,
+            'current_step': 1
+        }
 
         self.logger = logging.getLogger(__name__)
 
@@ -91,7 +100,44 @@ class BrowserManager:
         """Navigate to a URL and wait for page to load"""
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
+        
+        # Set original URL if this is the first navigation
+        if not self.crawler_state['original_url']:
+            self.crawler_state['original_url'] = url
+            self.logger.info(f"Set original URL: {url}")
 
         await self.page.goto(url)
         await self.page.wait_for_load_state("networkidle")
         self.logger.info(f"Navigated to: {url}")
+    
+    # State management methods
+    async def save_state(self, state_data: dict):
+        """Save crawler state to backend storage"""
+        self.crawler_state.update(state_data)
+        self.logger.info(f"State saved: {len(self.crawler_state.get('selections', []))} selections")
+        
+    async def get_state(self) -> dict:
+        """Get current crawler state from backend storage"""
+        return self.crawler_state.copy()
+    
+    async def get_original_url(self) -> str:
+        """Get the original URL where crawling started"""
+        return self.crawler_state.get('original_url', '')
+    
+    async def add_to_navigation_history(self, url: str):
+        """Add URL to navigation history"""
+        if 'navigation_history' not in self.crawler_state:
+            self.crawler_state['navigation_history'] = []
+        self.crawler_state['navigation_history'].append(url)
+        self.logger.info(f"Added to navigation history: {url}")
+    
+    async def get_navigation_history(self) -> list:
+        """Get navigation history"""
+        return self.crawler_state.get('navigation_history', [])
+    
+    async def pop_navigation_history(self) -> str:
+        """Pop last URL from navigation history"""
+        history = self.crawler_state.get('navigation_history', [])
+        if history:
+            return history.pop()
+        return None
